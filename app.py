@@ -5,10 +5,10 @@ pytesseract.pytesseract.tesseract_cmd = 'C:\Program Files\Tesseract-OCR/tesserac
 
 def main():
     
-    img = cv2.imread("./imgs/120.jpg")
+    img = cv2.imread("./imgs/h_lines/1310.jpg")
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    print("The number is " + tr.text_recognition(img))
+    print("The number of lines is " + str(tr.text_recognition(img)))
 
 
 if __name__ == "__main__":
