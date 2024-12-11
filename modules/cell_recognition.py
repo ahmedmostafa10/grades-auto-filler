@@ -1,12 +1,45 @@
 from modules.utils import *
 
-def text_recognition(cell):
-    return detect_horizontal_lines(cell)
+# index = 0 -> Code
+# index = 1 -> Digit
+# index = 2 -> Symbol
+
+def cell_recognition(cell, index, SVM_model):
+    out = ""
+
+    if index == 0:
+        # detect the code
+        out = code_recognition(cell)
+    elif index == 1:
+        # detect the digit
+        out = digits_recognition(cell)
+    elif index == 2:
+        # detect the symbol
+        
+        # crop the image 
+        cropped=cell[20:np.shape(cell)[0]-20,20:np.shape(cell)[1]-20]
+
+        if np.sum(cropped) == 0:
+            out = 'empty'
+        else:
+            out = symbol_recognition(cell, SVM_model)
+
+    return out
 
 
-def digits_recognition(image):
+def code_recognition(cell):
+    custom_config = r'--oem 3 --psm 6 outputbase digits'
+    text = pytesseract.image_to_string(cell, config=custom_config)
+
+    return text
+
+
+def digits_recognition(cell):
+    # TODO
+    # Still not so accurate
+
     sharpen_kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
-    sharpen = cv2.filter2D(image, -1, sharpen_kernel)
+    sharpen = cv2.filter2D(cell, -1, sharpen_kernel)
     thresh = cv2.threshold(sharpen, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
 
     possible_values_for_0 = ['O', 'o']
@@ -37,30 +70,44 @@ def digits_recognition(image):
         trimmed = "7"
     if(trimmed in possible_values_for_9):
         trimmed = "9"
+
     return trimmed
 
 
 
-def detect_vertical_lines(image):
-    height = image.shape[0] // 4
 
-    verticalSE = cv2.getStructuringElement(cv2.MORPH_RECT, (1, height))
-    morphResult = cv2.morphologyEx(image, cv2.MORPH_OPEN, verticalSE)
-    contours, hierarchy = cv2.findContours(morphResult, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    verticalLinesCnt = len(contours)
+def symbol_recognition(cell, SVM_model):
+  #Getting HOG of the Cell
+  hog_features, _ = hog_fun (cell)
+  
+  # Send cell to the Model
+  symbol = SVM_model.predict([hog_features])
+ 
+  return symbol
 
-    return verticalLinesCnt
 
 
-def detect_horizontal_lines(image):
-    height = image.shape[1] // 4
 
-    verticalSE = cv2.getStructuringElement(cv2.MORPH_RECT, (height, 1))
-    morphResult = cv2.morphologyEx(image, cv2.MORPH_OPEN, verticalSE)
-    contours, hierarchy = cv2.findContours(morphResult, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    horizontalLinesCnt = len(contours)
+# def detect_vertical_lines(image):
+#     height = image.shape[0] // 4
 
-    return horizontalLinesCnt
+#     verticalSE = cv2.getStructuringElement(cv2.MORPH_RECT, (1, height))
+#     morphResult = cv2.morphologyEx(image, cv2.MORPH_OPEN, verticalSE)
+#     contours, hierarchy = cv2.findContours(morphResult, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+#     verticalLinesCnt = len(contours)
+
+#     return verticalLinesCnt
+
+
+# def detect_horizontal_lines(image):
+#     height = image.shape[1] // 4
+
+#     verticalSE = cv2.getStructuringElement(cv2.MORPH_RECT, (height, 1))
+#     morphResult = cv2.morphologyEx(image, cv2.MORPH_OPEN, verticalSE)
+#     contours, hierarchy = cv2.findContours(morphResult, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+#     horizontalLinesCnt = len(contours)
+
+#     return horizontalLinesCnt
 
 
     # # sharpen_kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
