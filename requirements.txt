@@ -6,3 +6,5 @@ opencv
 scikit-image
 pickle5
 scikit-learn
+pandas
+openpyxl
