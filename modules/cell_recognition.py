@@ -129,6 +129,18 @@ def symbol_recognition(cell, SVM_model):
  
   return symbol[0]
 
+def bubble_selection(cell):
+    print((cell.shape[0] * cell.shape[1]))
+
+    threshold = 50
+    count = np.sum(cell > threshold)
+
+    fill_level = count / (cell.shape[0] * cell.shape[1])
+    print(fill_level)
+    if fill_level > 0.5:
+        return "1"
+    else:
+        return "0"
 
 
 
