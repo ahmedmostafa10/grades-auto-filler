@@ -20,9 +20,37 @@ def cell_recognition(cell, index, SVM_model):
         cropped=cell[20:np.shape(cell)[0]-20,20:np.shape(cell)[1]-20]
 
         if np.sum(cropped) == 0:
-            out = 'empty'
+            out = "-"
         else:
             out = symbol_recognition(cell, SVM_model)
+
+    if out == "Square":
+        out = "0"
+
+    elif out == "1_ver":
+        out = "1"
+    elif out == "2_ver":
+        out = "2"
+    elif out == "3_ver":
+        out = "3"
+    elif out == "4_ver":
+        out = "4"
+    elif out == "5_ver":
+        out = "5"
+
+    elif out == "1_hor":
+        out = "4"
+    elif out == "2_hor":
+        out = "3"
+    elif out == "3_hor":
+        out = "2"
+    elif out == "4_hor":
+        out = "1"
+
+    elif out == "Question":
+        out = '?'
+    elif out == "Check":
+        out = "5"
 
     return out
 
@@ -31,30 +59,40 @@ def code_recognition(cell):
     custom_config = r'--oem 3 --psm 6 outputbase digits'
     text = pytesseract.image_to_string(cell, config=custom_config)
 
-    return text
+    ans = text.rstrip()
+
+    return ans if ans != "" else "0000000"
 
 
 def digits_recognition(cell):
     # TODO
     # Still not so accurate
-
     sharpen_kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
-    sharpen = cv2.filter2D(cell, -1, sharpen_kernel)
-    thresh = cv2.threshold(sharpen, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
+    cell = cv2.filter2D(cell, -1, sharpen_kernel)
 
-    possible_values_for_0 = ['O', 'o']
-    possible_values_for_1 = ['|', 'i', 'I', '!', '/', "\\", "T"]
-    possible_values_for_2 = ['z', 'zz', 'Zz', 'Z', 'zZ', "ZZ"]
-    possible_values_for_4 = ['q']
-    possible_values_for_5 = ['So', 's', 'S']
-    possible_values_for_7 = ['we']
-    possible_values_for_9 = ['a','9)']
+    cell = cv2.threshold(cell, 128, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+    cell = cv2.medianBlur(cell, 3)
+    cell = cv2.resize(cell, (300, 300))
 
-    digit = pytesseract.image_to_string(thresh, config='--psm 10 --oem 1')
 
+    digit = pytesseract.image_to_string(cell, config='--psm 13 --oem 3 -c tessedit_char_whitelist=0123456789')
+
+    possible_values_for_0 = ['0', 'O', 'o']
+    possible_values_for_1 = ['1', '|', 'i', 'I', '!', '/', "\\", "T"]
+    possible_values_for_2 = ['2', 'z', 'zz', 'Zz', 'Z', 'zZ', "ZZ"]
+    possible_values_for_3 = ['3']
+    possible_values_for_4 = ['4', 'q']
+    possible_values_for_5 = ['5', 'So', 's', 'S']
+    possible_values_for_6 = ['6', 'b']
+    possible_values_for_7 = ['7', 'we']
+    possible_values_for_8 = ['8', 'g']
+    possible_values_for_9 = ['9', 'a','9)']
+
+    print(digit)
+    digit = digit.rstrip()
     trimmed = digit.strip()
 
-    print(trimmed)
+    # print(trimmed)
 
     if(trimmed in possible_values_for_0):
         trimmed = "0"
@@ -62,12 +100,18 @@ def digits_recognition(cell):
         trimmed = "1"
     if(trimmed in possible_values_for_2):
         trimmed = "2"
+    if(trimmed in possible_values_for_3):
+        trimmed = "3"
     if(trimmed in possible_values_for_4):
         trimmed = "4"
     if(trimmed in possible_values_for_5):
         trimmed = "5"
+    if(trimmed in possible_values_for_6):
+        trimmed = "6"
     if(trimmed in possible_values_for_7):
         trimmed = "7"
+    if(trimmed in possible_values_for_8):
+        trimmed = "8"
     if(trimmed in possible_values_for_9):
         trimmed = "9"
 
@@ -83,7 +127,7 @@ def symbol_recognition(cell, SVM_model):
   # Send cell to the Model
   symbol = SVM_model.predict([hog_features])
  
-  return symbol
+  return symbol[0]
 
 
 

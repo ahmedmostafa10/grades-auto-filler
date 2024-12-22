@@ -80,7 +80,7 @@ def trained_data():
 
 def train_model(x_train, y_train):
     
-    model = svm.SVC()
+    model = svm.SVC(max_iter=1000)
     model.fit(x_train, y_train)
 
     return model    
