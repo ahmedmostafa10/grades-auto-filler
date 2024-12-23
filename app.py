@@ -87,10 +87,19 @@ def main():
             letters = [line.strip() for line in file]
         print(letters)
         markdown=[]
+        id=171
+        markdown.append(id)  # u should remove these two lines after appending id from photo
         for i in range(len(answers)):
             if(answers[i][0]==letters[i]):
                 markdown.append(1)
             else:
                 markdown.append(0)
+        with open('output.txt', 'w') as file:
+        # Write elements separated by spaces
+            file.write(' '.join(map(str, markdown)))
+        
+        (dp.parse_exam_data("output.txt",len(answers))).to_csv('./output.csv',index=False)
+        eg.generate_excel_from_csv('./output.csv', './output.xlsx')
+        
 if __name__ == "__main__":
     main()
