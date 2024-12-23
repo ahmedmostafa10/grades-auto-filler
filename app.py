@@ -30,8 +30,8 @@ def main():
         fig.set_size_inches(np.array(fig.get_size_inches()) * n_ims)
         plt.show()
 
-    image_path="./Data set/bubble sheet/1/1.jpg";
-    model=2
+    image_path="./Data set/grade sheet/1.jpg";
+    model=1
     if(model == 1):
         cropped_matrix, warped_colored_matrix, c = et.ExtractTableWithCells(image_path)
         #show_images([cropped_matrix[0][3]],[""])
@@ -46,16 +46,18 @@ def main():
                     # index = 0 -> Code
                     # index = 1 -> Digit
                     # index = 2 -> Symbol
-                    #ele = cv2.cvtColor(ele, cv2.COLOR_BGR2GRAY)
+                    # ele = cv2.cvtColor(ele, cv2.COLOR_BGR2GRAY)
                     # print(ele.shape)
                     # cut only if code
-                    # ele = cv2.resize(ele, (185, 220))
-                    if j == 0:
-                        ele = ele[60 : 170, 0 : 200]
-                    else:
-                        ele = ele[5 : 180, 15 : 220]
+                    #ele = cv2.resize(ele, (185, 220))
+                    # if j == 0:
+                    #     ele = ele[60 : 170, 0 : 200]
+                    # else:
+                    #     ele = ele[5 : 180, 15 : 220]
                     # print(ele.shape)
-                    ele = cv2.bitwise_not(ele)
+                    # ele = cv2.bitwise_not(ele)
+                    print(ele)
+                    show_images([ele],[""])
                     # io.imshow(ele)
                     # io.show()
                     # io.imsave("./train/" + str(uuid.uuid4()) + ".jpg", ele)
@@ -77,8 +79,10 @@ def main():
         studentId=np.array(studentId)
         gray_image=(rgb2gray(studentId)*255).astype(np.uint8)
         studentId = (gray_image>160).astype(np.uint8)
-        #show_images([studentId],[" "])
-        ###ya kerols zabat el id and append it on markdown[0]
+        studentId=cv2.bitwise_not(studentId)
+        show_images([studentId],[" "])
+        id= cr.cell_recognition(studentId,0,None)
+        print(id)
 
         answers=cr.bubble_answers(bubbles_matrix)
         for i in range(len(answers)):
@@ -87,7 +91,6 @@ def main():
             letters = [line.strip() for line in file]
         print(letters)
         markdown=[]
-        id=171
         markdown.append(id)  # u should remove these two lines after appending id from photo
         for i in range(len(answers)):
             if(answers[i][0]==letters[i]):

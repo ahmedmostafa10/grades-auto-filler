@@ -160,7 +160,8 @@ def ExtractTableWithCells(ImagePath):
             img=np.array(cropped_matrix[i][j])
             gray_image=(rgb2gray(img)*255).astype(np.uint8)
             binary_image = (gray_image>160).astype(np.uint8)
-            cropped_matrix[i][j]=binary_image
+            cropped_matrix[i][j]=cv2.bitwise_not(binary_image)
+            # show_images([cropped_matrix[i][j]],[""])
     return cropped_matrix, WarpedColoredImage, True
 
 ExtractTableWithCells("./Data set/grade sheet/15.jpg")
