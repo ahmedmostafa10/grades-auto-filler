@@ -128,19 +128,62 @@ def symbol_recognition(cell, SVM_model):
   symbol = SVM_model.predict([hog_features])
  
   return symbol[0]
+def show_images(images, titles=None):
+        n_ims = len(images)
+        if titles is None:
+            titles = ['(%d)' % i for i in range(1, n_ims + 1)]
+        fig = plt.figure()
+        n = 1
+        for image, title in zip(images, titles):
+            a = fig.add_subplot(1, n_ims, n)
+            if image.ndim == 2:
+                plt.gray()
+            plt.imshow(image)
+            a.set_title(title)
+            n += 1
+        fig.set_size_inches(np.array(fig.get_size_inches()) * n_ims)
+        plt.show()
+def bubble_selection(row):
+    row_answers=[]
+    maxx=0
+    ans=0
+    counts=[]
+    for i in range(len(row)):
+        # _, binary_image = cv2.threshold(row[i], 127, 255, cv2.THRESH_BINARY)
+        binary_image = (row[i]>160)
+        # kernel = np.ones((3, 3), np.uint8)
+        # dilated_image = cv2.dilate(binary_image, kernel, iterations=1)
+        # eroded_image = cv2.erode(dilated_image, kernel, iterations=1)
+        black_pixel_count = np.sum(binary_image == 0)
+        counts.append(black_pixel_count)
+        if(black_pixel_count>maxx):
+            maxx=black_pixel_count
+            ans=i
+    thersould= 0.97* maxx
+    for i in range(len(row)):
+        if(counts[i]>thersould):
+            if(i==0):
+                row_answers.append('A')
+            elif(i==1):
+                row_answers.append('B')
+            elif(i==2):
+                row_answers.append('C')
+            elif(i==3):
+                row_answers.append('D')
+            else:
+                row_answers.append('E')
+    return row_answers
 
-def bubble_selection(cell):
-    print((cell.shape[0] * cell.shape[1]))
+def bubble_answers(bubbles_matrix):
+    columns=len(bubbles_matrix)
+    rowsPerColoumn=len(bubbles_matrix[0])
+    answers=[]
+    for i in range(columns):
+        for j in range(rowsPerColoumn):
+            row_answers=bubble_selection(bubbles_matrix[i][j])
+            answers.append(row_answers)
 
-    threshold = 50
-    count = np.sum(cell > threshold)
-
-    fill_level = count / (cell.shape[0] * cell.shape[1])
-    print(fill_level)
-    if fill_level > 0.5:
-        return "1"
-    else:
-        return "0"
+    return answers
 
 
 

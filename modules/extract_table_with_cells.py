@@ -1,20 +1,38 @@
-from modules.utils import *
-
-# def show_images(images, titles=None):
-#     n_ims = len(images)
-#     if titles is None:
-#         titles = ['(%d)' % i for i in range(1, n_ims + 1)]
-#     fig = plt.figure()
-#     n = 1
-#     for image, title in zip(images, titles):
-#         a = fig.add_subplot(1, n_ims, n)
-#         if image.ndim == 2:
-#             plt.gray()
-#         plt.imshow(image)
-#         a.set_title(title)
-#         n += 1
-#     fig.set_size_inches(np.array(fig.get_size_inches()) * n_ims)
-#     plt.show()
+# from modules.utils import *
+import matplotlib.pyplot as plt
+import imutils
+from skimage.color import rgb2gray
+from skimage.transform import resize
+from skimage.feature import hog
+import skimage.io as io
+import pytesseract
+import numpy as np
+import cv2
+import os
+from sklearn import svm
+import pickle
+from sklearn.model_selection import train_test_split
+import random
+from skimage.filters import threshold_otsu
+from skimage.morphology import binary_erosion, binary_dilation
+import pandas as pd
+from openpyxl import Workbook
+from openpyxl.styles import PatternFill
+def show_images(images, titles=None):
+    n_ims = len(images)
+    if titles is None:
+        titles = ['(%d)' % i for i in range(1, n_ims + 1)]
+    fig = plt.figure()
+    n = 1
+    for image, title in zip(images, titles):
+        a = fig.add_subplot(1, n_ims, n)
+        if image.ndim == 2:
+            plt.gray()
+        plt.imshow(image)
+        a.set_title(title)
+        n += 1
+    fig.set_size_inches(np.array(fig.get_size_inches()) * n_ims)
+    plt.show()
 
 def reorderPoints(points):
 
@@ -133,9 +151,16 @@ def ExtractTableWithCells(ImagePath):
     # =========================================Display and Return Results==========================================
     print(f"Extracted {len(cropped_matrix)} rows with 4 columns (excluding 2nd and 3rd).")
 
-    # cropped_matrix =cropped_matrix[1:]
-    # for i, row in enumerate(cropped_matrix):
-    #     titles = [f"Row {i+1} Col {j+1}" for j in range(len(row))]
-    #     show_images(row, titles)
-
+    cropped_matrix =cropped_matrix[1:]
+    for i, row in enumerate(cropped_matrix):
+        titles = [f"Row {i+1} Col {j+1}" for j in range(len(row))]
+        #show_images(row, titles)
+    for i in range(len(cropped_matrix)):
+        for j in range(len(cropped_matrix[0])):
+            img=np.array(cropped_matrix[i][j])
+            gray_image=(rgb2gray(img)*255).astype(np.uint8)
+            binary_image = (gray_image>160).astype(np.uint8)
+            cropped_matrix[i][j]=binary_image
     return cropped_matrix, WarpedColoredImage, True
+
+ExtractTableWithCells("./Data set/grade sheet/15.jpg")

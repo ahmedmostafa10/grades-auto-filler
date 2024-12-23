@@ -26,26 +26,98 @@ def apply_threshold(image, threshold):
             image[i][j]=image[i][j]>threshold
     return image
 
+def load_image_with_orientation(image_path):
+    image = Image.open(image_path)
+    for orientation in ExifTags.TAGS.keys():
+        if ExifTags.TAGS[orientation] == 'Orientation':
+            break
+    exif = image._getexif()
+    if exif is not None:
+        orientation = exif.get(orientation)
+        if orientation == 3:
+            image = image.rotate(180, expand=True)
+        elif orientation == 6:
+            image = image.rotate(270, expand=True)
+        elif orientation == 8:
+            image = image.rotate(90, expand=True)
+    return np.array(image)
 
-def preprocess_image(image_path):
-    image = io.imread(image_path)
+
+def preprocess_gradeSheet(image_path):
+    image = load_image_with_orientation(image_path)
+    #show_images([image],["original image"])
     gray_image= (rgb2gray(image[:,:,0:3])*255).astype(np.uint8)
-    binary_img=apply_threshold(gray_image, 160)
+    #show_images([gray_image],["gray_image"])
+    Thresholded_Img = cv2.adaptiveThreshold(gray_image, 255,cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 21, 10)
 
-    # erosion_img=binary_erosion(binary_img)
-    binary_erosion_img= np.where(binary_img, 255, 0)
-    binary_img_np = np.array(binary_erosion_img, dtype=np.uint8)
-
-
-    contours, _ = cv2.findContours(binary_img_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(Thresholded_Img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     contour = max(contours, key=cv2.contourArea)
     epsilon = 0.02 * cv2.arcLength(contour, True)
     paper_corners = cv2.approxPolyDP(contour, epsilon, True)
+    
     if len(paper_corners) == 4:
-        # Proceed with perspective transformation
         paper_corners = paper_corners.reshape(4, 2).astype("float32")
     else:
         raise ValueError("Couldn't detect a quadrilateral from the contour.")
+    
+    sum_coords = paper_corners.sum(axis=1)
+    diff_coords = np.diff(paper_corners, axis=1)
+    
+    top_left = paper_corners[np.argmin(sum_coords)]
+    bottom_right = paper_corners[np.argmax(sum_coords)]
+    top_right = paper_corners[np.argmin(diff_coords)]
+    bottom_left = paper_corners[np.argmax(diff_coords)]
+    
+    paper_corners = np.array([top_left, top_right, bottom_right, bottom_left], dtype="float32")
+    
+    width_top = np.linalg.norm(paper_corners[0] - paper_corners[1])  # Top edge
+    width_bottom = np.linalg.norm(paper_corners[2] - paper_corners[3])  # Bottom edge
+    height_left = np.linalg.norm(paper_corners[0] - paper_corners[3])  # Left edge
+    height_right = np.linalg.norm(paper_corners[1] - paper_corners[2])  # Right edge
+    
+    width = int(max(width_top, width_bottom)) 
+    height = int(max(height_left, height_right))
+
+    print(width, height)
+    
+    dst_points = np.array([
+        [0, 0],
+        [width - 1, 0],
+        [width - 1, height - 1],
+        [0, height - 1]
+    ], dtype="float32")
+
+    M = cv2.getPerspectiveTransform(paper_corners, dst_points)
+
+    # Apply the warp
+    warped_image = cv2.warpPerspective(Thresholded_Img, M, (width, height))
+    return warped_image
+
+
+
+def preprocess_bubbleSheet(image_path):
+    image = load_image_with_orientation(image_path)
+    #show_images([image],["original image"])
+    gray_image= (rgb2gray(image[:,:,0:3])*255).astype(np.uint8)
+    #gray_image = cv2.GaussianBlur(gray_image, (5, 5), 0)
+    _, Thresholded_Img = cv2.threshold(gray_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    # Find contours
+    contours, _ = cv2.findContours(Thresholded_Img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contour = max(contours, key=cv2.contourArea)
+
+    # Approximate contour to polygon
+    epsilon = 0.01 * cv2.arcLength(contour, True)
+    paper_corners = cv2.approxPolyDP(contour, epsilon, True)
+
+    # Debug information
+    #print(f"Number of corners detected: {len(paper_corners)}")
+
+    if len(paper_corners) == 4:
+        paper_corners = paper_corners.reshape(4, 2).astype("float32")
+    else:
+        raise ValueError("Couldn't detect a quadrilateral from the contour.")
+
     #print(paper_corners)
     width_top = np.linalg.norm(paper_corners[0] - paper_corners[1])  # Top edge
     width_bottom = np.linalg.norm(paper_corners[2] - paper_corners[3])  # Bottom edge
@@ -57,7 +129,7 @@ def preprocess_image(image_path):
     height = int(max(height_left, height_right))
     # if width > height:
     #     width, height = height, width
-    print(width,height)
+    #print(width,height)
     dst_points = np.array([
         [0, 0],
         [width - 1, 0],
@@ -66,16 +138,7 @@ def preprocess_image(image_path):
     ], dtype="float32")
 
     M = cv2.getPerspectiveTransform(paper_corners, dst_points)
-
     # Apply the warp
-    warped_image = cv2.warpPerspective(binary_img_np, M, (width, height))
-    if(width>height):
-        rotated_image = cv2.rotate(warped_image, cv2.ROTATE_90_CLOCKWISE)
-        final_img = cv2.flip(rotated_image, 1)
-    else:
-        final_img = cv2.flip(warped_image, 1)
-
-    # save it to be used by ROI
-    io.imsave('saved_image.jpg', final_img)
-
+    warped_image = cv2.warpPerspective(Thresholded_Img, M, (width, height))
+    final_img = cv2.flip(warped_image, 1)
     return final_img

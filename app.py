@@ -1,11 +1,11 @@
 import uuid
 from modules.utils import *
 import modules.cell_recognition as cr
-import modules.preprocessing as pp
 import modules.symbol_train as st
 import modules.extract_table_with_cells as et
 import modules.data_parsing as dp
 import modules.excel_generation as eg
+import modules.extract_bubbles as eb
 
 pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
 
@@ -13,60 +13,84 @@ filename = 'symbols_model.sav'
 
 
 def main():
-    SVM_model = pickle.load(open(filename, 'rb'))    
-
-    pp.preprocess_image("./Data set/grade sheet/15.jpg")
-
-    cropped_matrix, warped_colored_matrix, c = et.ExtractTableWithCells("./saved_image.jpg")
-
-    switcher = { 0:0, 1:1, 2:2, 3:2}
-
-    file = open('example.txt', 'w')
-
-    for i, row in enumerate(cropped_matrix):
-        if i != 0:
-            line = ""
-            for j, ele in enumerate(row):
-                # index = 0 -> Code
-                # index = 1 -> Digit
-                # index = 2 -> Symbol
-
-                ele = cv2.cvtColor(ele, cv2.COLOR_BGR2GRAY)
-                
-                # print(ele.shape)
-                # cut only if code
-
-                # ele = cv2.resize(ele, (185, 220))
-
-                if j == 0:
-                    ele = ele[60 : 170, 0 : 200]
-                else:
-                    ele = ele[5 : 180, 15 : 220]
-
-                # print(ele.shape)
-
-                ele = cv2.bitwise_not(ele)
-                # io.imshow(ele)
-                # io.show()
-
-                # io.imsave("./train/" + str(uuid.uuid4()) + ".jpg", ele)
-                
-                ans = str(cr.cell_recognition(ele, switcher.get(j), SVM_model))
-
-                # print(ans)
-
-                line = line + " " + ans
-
-            print(line)
-            file.write(line + "\n")
-
-    file.close()
-
-    df = dp.parse_exam_data('example.txt', 3)
-
-    df.to_csv('./example.csv',index=False)
     
-    eg.generate_excel_from_csv('./example.csv', './example.xlsx')
+    def show_images(images, titles=None):
+        n_ims = len(images)
+        if titles is None:
+            titles = ['(%d)' % i for i in range(1, n_ims + 1)]
+        fig = plt.figure()
+        n = 1
+        for image, title in zip(images, titles):
+            a = fig.add_subplot(1, n_ims, n)
+            if image.ndim == 2:
+                plt.gray()
+            plt.imshow(image)
+            a.set_title(title)
+            n += 1
+        fig.set_size_inches(np.array(fig.get_size_inches()) * n_ims)
+        plt.show()
 
+    image_path="./Data set/bubble sheet/1/1.jpg";
+    model=2
+    if(model == 1):
+        cropped_matrix, warped_colored_matrix, c = et.ExtractTableWithCells(image_path)
+        #show_images([cropped_matrix[0][3]],[""])
+        switcher = { 0:0, 1:1, 2:2, 3:2}
+        SVM_model = pickle.load(open(filename, 'rb'))    
+        file = open('example.txt', 'w')
+
+        for i, row in enumerate(cropped_matrix):
+            if i != 0:
+                line = ""
+                for j, ele in enumerate(row):
+                    # index = 0 -> Code
+                    # index = 1 -> Digit
+                    # index = 2 -> Symbol
+                    #ele = cv2.cvtColor(ele, cv2.COLOR_BGR2GRAY)
+                    # print(ele.shape)
+                    # cut only if code
+                    # ele = cv2.resize(ele, (185, 220))
+                    if j == 0:
+                        ele = ele[60 : 170, 0 : 200]
+                    else:
+                        ele = ele[5 : 180, 15 : 220]
+                    # print(ele.shape)
+                    ele = cv2.bitwise_not(ele)
+                    # io.imshow(ele)
+                    # io.show()
+                    # io.imsave("./train/" + str(uuid.uuid4()) + ".jpg", ele)
+                    ans = str(cr.cell_recognition(ele, switcher.get(j), SVM_model))
+                    # print(ans)
+                    line = line + " " + ans
+                print(line)
+                file.write(line + "\n")
+
+        file.close()
+
+        df = dp.parse_exam_data('example.txt', 3)
+
+        df.to_csv('./example.csv',index=False)
+
+        eg.generate_excel_from_csv('./example.csv', './example.xlsx')
+    else:
+        studentId,bubbles_matrix = eb.extract_bubbles(image_path)
+        studentId=np.array(studentId)
+        gray_image=(rgb2gray(studentId)*255).astype(np.uint8)
+        studentId = (gray_image>160).astype(np.uint8)
+        #show_images([studentId],[" "])
+        ###ya kerols zabat el id and append it on markdown[0]
+
+        answers=cr.bubble_answers(bubbles_matrix)
+        for i in range(len(answers)):
+            print(f"answer {i+1}: {answers[i]}")
+        with open('./answer.txt', 'r') as file:
+            letters = [line.strip() for line in file]
+        print(letters)
+        markdown=[]
+        for i in range(len(answers)):
+            if(answers[i][0]==letters[i]):
+                markdown.append(1)
+            else:
+                markdown.append(0)
 if __name__ == "__main__":
     main()

@@ -3,6 +3,7 @@ from imutils import contours as COUNTOURS
 import numpy as np
 import imutils
 import cv2
+from skimage.color import rgb2gray
 import sys
 import matplotlib.pyplot as plt
 
@@ -287,5 +288,9 @@ def extract_bubbles(imagePath) :
             section_bubble_matrix.append(row_images)
 
         bubble_matrix.append(section_bubble_matrix)
+    studentId=np.array(student_id)
+    gray_image=(rgb2gray(studentId)*255).astype(np.uint8)
+    binary_image = (gray_image>160)
+    studentId=binary_image
 
-    return bubble_matrix
+    return student_id,bubble_matrix

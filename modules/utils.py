@@ -6,6 +6,7 @@ from skimage.feature import hog
 import skimage.io as io
 import pytesseract
 import numpy as np
+
 import cv2
 import os
 from sklearn import svm
@@ -17,7 +18,8 @@ from skimage.morphology import binary_erosion, binary_dilation
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill
-
+import skimage.io as io
+from PIL import Image, ExifTags
 
 def hog_fun(img):
     resized_img = resize(img, (128 * 4, 64 * 4))
