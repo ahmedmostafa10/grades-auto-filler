@@ -30,7 +30,7 @@ def main():
         fig.set_size_inches(np.array(fig.get_size_inches()) * n_ims)
         plt.show()
 
-    image_path="./Data set/grade sheet/1.jpg";
+    image_path="./Data set/grade sheet/13.jpg"
     model=1
     if(model == 1):
         cropped_matrix, warped_colored_matrix, c = et.ExtractTableWithCells(image_path)
@@ -49,17 +49,21 @@ def main():
                     # ele = cv2.cvtColor(ele, cv2.COLOR_BGR2GRAY)
                     # print(ele.shape)
                     # cut only if code
-                    #ele = cv2.resize(ele, (185, 220))
-                    # if j == 0:
-                    #     ele = ele[60 : 170, 0 : 200]
-                    # else:
-                    #     ele = ele[5 : 180, 15 : 220]
+                    ele = cv2.resize(ele, (185, 220))
+                    if j == 0:
+                        ele = ele[60 : 170, 0 : 200]
+                    else:
+                        ele = ele[5 : 180, 15 : 220]
+
                     # print(ele.shape)
                     # ele = cv2.bitwise_not(ele)
-                    print(ele)
-                    show_images([ele],[""])
-                    # io.imshow(ele)
-                    # io.show()
+                    # print(ele)
+                    # for x in ele: 
+                    #     print(' '.join(map(str, x)))
+
+                    # show_images([ele],[""])
+                    io.imshow(ele)
+                    io.show()
                     # io.imsave("./train/" + str(uuid.uuid4()) + ".jpg", ele)
                     ans = str(cr.cell_recognition(ele, switcher.get(j), SVM_model))
                     # print(ans)
